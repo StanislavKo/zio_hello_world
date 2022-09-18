@@ -1,4 +1,5 @@
 Scala 3.2
+
 sbt 1.7.1
 
 There are no tests.
