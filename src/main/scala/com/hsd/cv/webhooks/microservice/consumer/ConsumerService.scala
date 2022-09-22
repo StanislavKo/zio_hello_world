@@ -9,7 +9,7 @@ import zio.kafka.consumer.{Consumer, ConsumerSettings, Subscription}
 import zio.kafka.serde.Serde
 import zio.{Console, Duration, RIO, Schedule, Task, URIO, ZIO, ZLayer}
 
-import java.io.DataOutputStream
+import java.io.{DataOutputStream, IOException}
 import java.net.{HttpURLConnection, URL, URLEncoder}
 import java.util.Date
 import scala.io.Source
@@ -34,17 +34,23 @@ object ConsumerService {
       )((k, v) => handle(k, v))
 
     def sendConfirmation(urlStr: String, k: String, v: String) = {
-      val url = new URL(
-        s"$urlStr?k=${URLEncoder.encode(k, "UTF-8")}&v=${URLEncoder.encode(v, "UTF-8")}"
-      )
-      val con: HttpURLConnection =
-        url.openConnection.asInstanceOf[HttpURLConnection]
-      con.setConnectTimeout(2000)
-      con.setReadTimeout(2000)
-      con.setRequestMethod("GET")
-      val inputStream = con.getInputStream
-      val content = Source.fromInputStream(inputStream).mkString
-      if (inputStream != null) inputStream.close()
+      try {
+        val url = new URL(
+          s"$urlStr?k=${URLEncoder.encode(k, "UTF-8")}&v=${URLEncoder.encode(v, "UTF-8")}"
+        )
+        val con: HttpURLConnection =
+          url.openConnection.asInstanceOf[HttpURLConnection]
+        con.setConnectTimeout(2000)
+        con.setReadTimeout(2000)
+        con.setRequestMethod("GET")
+        val inputStream = con.getInputStream
+        val content = Source.fromInputStream(inputStream).mkString
+        if (inputStream != null) inputStream.close()
+      } catch {
+        case e: IOException => {
+          e.printStackTrace()
+        }
+      }
       ZIO.succeed(() => ())
     }
 
