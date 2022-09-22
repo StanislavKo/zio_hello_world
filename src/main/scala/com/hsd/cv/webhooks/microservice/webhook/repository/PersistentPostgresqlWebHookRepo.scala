@@ -1,7 +1,7 @@
 package com.hsd.cv.webhooks.microservice.webhook.repository
 
-import com.hsd.cv.webhooks.microservice.webhook.model.WebHook
-import com.hsd.cv.webhooks.microservice.webhook.repository.{PersistentPostgresqlWebHookRepo, WebHookTable}
+import com.hsd.cv.webhooks.microservice.webhook.model.{WebHook, WebHookId}
+import com.hsd.cv.webhooks.microservice.webhook.repository.PersistentPostgresqlWebHookRepo
 import io.getquill.*
 import io.getquill.context.ZioJdbc.DataSourceLayer
 import io.getquill.jdbczio.Quill
@@ -9,8 +9,6 @@ import zio.*
 
 import java.util.UUID
 import javax.sql.DataSource
-
-case class WebHookTable(id: Long, url: String, topic: String, format: String, volume: String)
 
 case class PersistentPostgresqlWebHookRepo(ds: DataSource) extends WebHookRepo:
   val ctx = new PostgresZioJdbcContext(Escape)
@@ -20,34 +18,43 @@ case class PersistentPostgresqlWebHookRepo(ds: DataSource) extends WebHookRepo:
   override def register(webHook: WebHook): Task[Long] = {
     val id = ctx.run {
       quote {
-        querySchema[WebHookTable]("webhook").insertValue {
-          lift(WebHookTable(0, webHook.url, webHook.topic, webHook.format, webHook.volume))
+        querySchema[WebHookId]("webhook").insertValue {
+          lift(WebHookId(0, webHook.url, webHook.topic, webHook.format, webHook.volume))
         }.returningGenerated(_.id)
       }
     }
     id
   }.provide(ZLayer.succeed(ds))
 
-  override def lookup(id: Long): Task[Option[WebHook]] =
+  override def lookup(id: Long): Task[Option[WebHookId]] =
     ctx.run {
       quote {
-        querySchema[WebHookTable]("webhook")
+        querySchema[WebHookId]("webhook")
           .filter(p => p.id == lift(id))
-          .map(wh => WebHook(wh.url, wh.topic, wh.format, wh.volume))
+          .map(wh => WebHookId(wh.id, wh.url, wh.topic, wh.format, wh.volume))
       }
     }.provide(ZLayer.succeed(ds)).map(_.headOption)
 
-  override def webhooks: Task[List[WebHook]] =
+  override def lookupByUrl(url: String): Task[Option[WebHookId]] =
     ctx.run {
       quote {
-        querySchema[WebHookTable]("webhook").map(wh => WebHook(wh.url, wh.topic, wh.format, wh.volume))
+        querySchema[WebHookId]("webhook")
+          .filter(p => p.url == lift(url))
+          .map(wh => WebHookId(wh.id, wh.url, wh.topic, wh.format, wh.volume))
+      }
+    }.provide(ZLayer.succeed(ds)).map(_.headOption)
+
+  override def webhooks: Task[List[WebHookId]] =
+    ctx.run {
+      quote {
+        querySchema[WebHookId]("webhook").map(wh => WebHookId(wh.id, wh.url, wh.topic, wh.format, wh.volume))
       }
     }.provide(ZLayer.succeed(ds))
 
   override def delete(id: Long): Task[Unit] =
     ctx.run {
       quote {
-        querySchema[WebHookTable]("webhook")
+        querySchema[WebHookId]("webhook")
           .filter(p => p.id == lift(id))
           .delete
       }
