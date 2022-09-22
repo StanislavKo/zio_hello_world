@@ -6,6 +6,7 @@ import com.hsd.cv.webhooks.microservice.consumer.ConsumerService
 import com.hsd.cv.webhooks.microservice.producer.{KafkaProducer, ProducerEffect}
 import com.hsd.cv.webhooks.microservice.webhook.WebHookApp
 import com.hsd.cv.webhooks.microservice.webhook.repository.{InmemoryWebHookRepo, PersistentH2WebHookRepo, PersistentPostgresqlWebHookRepo}
+import com.hsd.cv.webhooks.microservice.webhook.validator.WebHookValidatorService
 import zhttp.service.Server
 import zio.*
 
@@ -23,11 +24,12 @@ object MainApp {
             )
           }
           .provide(
-            // InmemoryWebHookRepo.layer,
+            WebHookValidatorService.layer,
+              // InmemoryWebHookRepo.layer,
             // PersistentH2WebHookRepo.layer,
             PersistentPostgresqlWebHookRepo.layer,
-            // A layer containing the configuration of the http server
-            HttpServerConfig.layer
+            HttpServerConfig.layer,
+            WebHookApp.layerUnit
           )
       )
       .main(Array.empty)
@@ -48,7 +50,7 @@ object MainApp {
       .fromZIO(
         ZIO
           .service[ConsumerService]
-          .flatMap { cs => cs.consume() }
+          .flatMap { _.consume() }
           .provide(
             PersistentPostgresqlWebHookRepo.layer,
             KafkaServerConfig.layer,

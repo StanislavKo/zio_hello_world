@@ -1,27 +1,37 @@
 package com.hsd.cv.webhooks.microservice.webhook
 
-import com.hsd.cv.webhooks.microservice.webhook.model.WebHook
+import com.hsd.cv.webhooks.microservice.webhook.model.{WebHook, WebHookId}
 import com.hsd.cv.webhooks.microservice.webhook.repository.WebHookRepo
+import com.hsd.cv.webhooks.microservice.webhook.validator.WebHookValidatorService
 import zhttp.http.*
 import zio.*
+import zio.ZIO.{none, suspendSucceed}
 import zio.json.*
 
-object WebHookApp:
-  def apply(): Http[WebHookRepo, Throwable, Request, Response] =
+object WebHookApp {
+  def apply(): Http[WebHookRepo with WebHookValidatorService with Unit, Throwable, Request, Response] =
     Http.collectZIO[Request] {
       // POST /webhooks
       case req@(Method.POST -> !! / "webhooks") =>
-        for
+        for {
           u <- req.bodyAsString.map(_.fromJson[WebHook])
           r <- u match
             case Left(e) =>
               ZIO.debug(s"Failed to parse the input: $e").as(
                 Response.text(e).setStatus(Status.BadRequest)
               )
-            case Right(u) =>
-              WebHookRepo.register(u)
-                .map(id => Response.text(id.toString))
-        yield r
+            case Right(u) => {
+              for {
+                validation1 <- ZIO.service[WebHookValidatorService].flatMap(!_.validate(u))
+                response2 <- suspendSucceed {
+                  if (validation1)
+                    WebHookRepo.register(u).map(id => Response.text(id.toString))
+                  else
+                    ZIO.succeed(Response.text("Validation is failed"))
+                }
+              } yield response2
+            }
+        } yield r
 
       // GET /webhooks/:id
       case Method.GET -> !! / "webhooks" / id =>
@@ -44,3 +54,7 @@ object WebHookApp:
 
     }
 
+  val layerUnit: ZLayer[WebHookRepo, Throwable, Unit] =
+    ZLayer.fromFunction(() => ())
+
+}

@@ -14,3 +14,4 @@ sbt run
 
 Change log:
 - HTTP server. Returned webhooks contain id;
+- HTTP server. Validation of created webhooks is added;
