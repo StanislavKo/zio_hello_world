@@ -17,17 +17,20 @@ object WebHookApp {
           u <- req.bodyAsString.map(_.fromJson[WebHook])
           r <- u match
             case Left(e) =>
-              ZIO.debug(s"Failed to parse the input: $e").as(
-                Response.text(e).setStatus(Status.BadRequest)
-              )
+              ZIO
+                .debug(s"Failed to parse the input: $e")
+                .as(Response.text(e).setStatus(Status.BadRequest))
             case Right(u) => {
               for {
-                validation1 <- ZIO.service[WebHookValidatorService].flatMap(!_.validate(u))
+                validationUrl <- ZIO.service[WebHookValidatorService].flatMap(!_.validateUrl(u))
+                validationParams <- ZIO.service[WebHookValidatorService].flatMap(!_.validateParams(u))
                 response2 <- suspendSucceed {
-                  if (validation1)
+                  if (validationUrl && validationParams)
                     WebHookRepo.register(u).map(id => Response.text(id.toString))
                   else
-                    ZIO.succeed(Response.text("Validation is failed"))
+                    ZIO
+                      .debug(s"Validation is failed: validationUrl=$validationUrl, validationParams=$validationParams")
+                      .as(Response.text("Validation is failed"))
                 }
               } yield response2
             }
