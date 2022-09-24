@@ -16,3 +16,5 @@ Change log:
 - HTTP server. Returned webhooks contain id;
 - HTTP server. Validation of created webhooks is added;
 - Downgrade to scala 2.13.8, sbt 1.6.2
+- Unit tests (basic)
+

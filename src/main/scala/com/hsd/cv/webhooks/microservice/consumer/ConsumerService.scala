@@ -3,6 +3,7 @@ package com.hsd.cv.webhooks.microservice.consumer
 import com.hsd.cv.webhooks.config.KafkaServerConfig
 import com.hsd.cv.webhooks.microservice.webhook.model.WebHook
 import com.hsd.cv.webhooks.microservice.webhook.repository.WebHookRepo
+import com.hsd.cv.webhooks.utils.NetworkUtils
 import zio.ZLayer.FunctionConstructor
 import zio.kafka.consumer.Consumer.{AutoOffsetStrategy, OffsetRetrieval}
 import zio.kafka.consumer.{Consumer, ConsumerSettings, Subscription}
@@ -16,12 +17,15 @@ import scala.io.Source
 
 trait ConsumerService {
   def consume(): zio.ZIO[Unit, Throwable, Long]
+  def getHandledMessages(): Int
 }
 
 object ConsumerService {
   // implementation
   case class ConsumerServiceImpl(config: KafkaServerConfig, repo: WebHookRepo)
       extends ConsumerService {
+
+    var handledMessages = 0
 
     val effect: RIO[Any, Unit] =
       Consumer.consumeWith(
@@ -34,28 +38,13 @@ object ConsumerService {
       )((k, v) => handle(k, v))
 
     def sendConfirmation(urlStr: String, k: String, v: String) = {
-      try {
-        val url = new URL(
-          s"$urlStr?k=${URLEncoder.encode(k, "UTF-8")}&v=${URLEncoder.encode(v, "UTF-8")}"
-        )
-        val con: HttpURLConnection =
-          url.openConnection.asInstanceOf[HttpURLConnection]
-        con.setConnectTimeout(2000)
-        con.setReadTimeout(2000)
-        con.setRequestMethod("GET")
-        val inputStream = con.getInputStream
-        val content = Source.fromInputStream(inputStream).mkString
-        if (inputStream != null) inputStream.close()
-      } catch {
-        case e: IOException => {
-          e.printStackTrace()
-        }
-      }
+      NetworkUtils.sendHttp(s"$urlStr?k=${URLEncoder.encode(k, "UTF-8")}&v=${URLEncoder.encode(v, "UTF-8")}")
       ZIO.succeed(() => ())
     }
 
     def handle(k: String, v: String) = {
-      println(s"consumer k=${k}, v=${v}")
+      println(s"consumer k=${k}, v=${v}, handledMessages=$handledMessages")
+      handledMessages += 1
       repo.webhooks.flatMap(
         webhooks => ZIO.succeed({
           webhooks.map(wh => sendConfirmation(wh.url, k, v))
@@ -64,8 +53,12 @@ object ConsumerService {
       ).!
     }
 
-    override def consume(): zio.ZIO[Unit, Throwable, Long] =
+    override def consume(): zio.ZIO[Unit, Throwable, Long] = {
       effect.repeat(Schedule.fixed(Duration.fromSeconds(5)))
+    }
+
+    override def getHandledMessages(): Int =
+      handledMessages
   }
 
   // layer
