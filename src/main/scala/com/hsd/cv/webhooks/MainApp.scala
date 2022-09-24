@@ -4,11 +4,11 @@ import com.hsd.cv.webhooks.config.{HttpServerConfig, KafkaServerConfig}
 import com.hsd.cv.webhooks.microservice.confirmation.ConfirmationApp
 import com.hsd.cv.webhooks.microservice.consumer.ConsumerService
 import com.hsd.cv.webhooks.microservice.producer.{KafkaProducer, ProducerEffect}
-import com.hsd.cv.webhooks.microservice.webhook.WebHookApp
 import com.hsd.cv.webhooks.microservice.webhook.repository.{InmemoryWebHookRepo, PersistentH2WebHookRepo, PersistentPostgresqlWebHookRepo}
+import com.hsd.cv.webhooks.microservice.webhook.service.WebHookApp
 import com.hsd.cv.webhooks.microservice.webhook.validator.WebHookValidatorService
 import zhttp.service.Server
-import zio.*
+import zio._
 
 object MainApp {
 
@@ -61,7 +61,7 @@ object MainApp {
       .main(Array.empty)
   }
 
-  @main def main() = {
+  def main(args: Array[String]): Unit = {
     println("STARTING")
 
     new Thread(() => {

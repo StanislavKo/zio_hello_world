@@ -2,21 +2,21 @@ package com.hsd.cv.webhooks.microservice.webhook.repository
 
 import com.hsd.cv.webhooks.microservice.webhook.model.{WebHook, WebHookId}
 import com.hsd.cv.webhooks.microservice.webhook.repository.PersistentH2WebHookRepo
-import io.getquill.*
+import io.getquill._
 import io.getquill.context.ZioJdbc.DataSourceLayer
 import io.getquill.jdbczio.Quill
-import zio.*
+import zio._
 
 import java.util.UUID
 import javax.sql.DataSource
 
-case class PersistentH2WebHookRepo(ds: DataSource) extends WebHookRepo:
+case class PersistentH2WebHookRepo(ds: DataSource) extends WebHookRepo {
   val ctx = new H2ZioJdbcContext(Escape)
 
-  import ctx.*
+  import ctx._
 
   override def register(webHook: WebHook): Task[Long] = {
-    for
+    for {
       id <- Random.nextLong
       _ <- ctx.run {
         quote {
@@ -25,7 +25,7 @@ case class PersistentH2WebHookRepo(ds: DataSource) extends WebHookRepo:
           }
         }
       }
-    yield id
+    } yield id
   }.provide(ZLayer.succeed(ds))
 
   override def lookup(id: Long): Task[Option[WebHookId]] =
@@ -61,8 +61,10 @@ case class PersistentH2WebHookRepo(ds: DataSource) extends WebHookRepo:
           .delete
       }
     }.provide(ZLayer.succeed(ds)).map(id => ())
+}
 
-object PersistentH2WebHookRepo:
+object PersistentH2WebHookRepo {
   def layer: ZLayer[Any, Throwable, PersistentH2WebHookRepo] =
     Quill.DataSource.fromPrefix("WebHookApp") >>>
       ZLayer.fromFunction(PersistentH2WebHookRepo(_))
+}

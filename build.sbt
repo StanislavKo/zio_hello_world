@@ -1,4 +1,4 @@
-scalaVersion := "3.1.3"
+scalaVersion := "2.13.8"
 organization := "com.hsd"
 name         := "CvWebHook"
 
@@ -14,7 +14,7 @@ libraryDependencies ++= Seq(
   "io.getquill"   %% "quill-zio"      % "4.3.0",
   "io.getquill"   %% "quill-jdbc-zio" % "4.3.0",
   "com.h2database" % "h2"             % "2.1.214",
-  "org.postgresql" % "postgresql"     % "42.5.0",
+  "org.postgresql" % "postgresql"     % "42.5.0"
 )
 
 libraryDependencies ++= Seq(
@@ -24,5 +24,5 @@ libraryDependencies ++= Seq(
 )
 testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
 
-enablePlugins(DockerPlugin)
+//enablePlugins(DockerPlugin)
 

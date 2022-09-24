@@ -5,8 +5,8 @@ import com.hsd.cv.webhooks.microservice.webhook.repository.WebHookRepo
 import zio.{Duration, RIO, Schedule, ZIO, ZLayer}
 
 trait WebHookValidatorService {
-  def validateUrl(webhook: WebHook): zio.ZIO[Unit, Throwable, Boolean]
-  def validateParams(webhook: WebHook): zio.ZIO[Unit, Throwable, Boolean]
+  def isUrlValid(webhook: WebHook): zio.ZIO[Unit, Throwable, Boolean]
+  def isParamsValid(webhook: WebHook): zio.ZIO[Unit, Throwable, Boolean]
 }
 
 object WebHookValidatorService {
@@ -14,20 +14,20 @@ object WebHookValidatorService {
   case class WebHookValidatorServiceImpl(repo: WebHookRepo)
       extends WebHookValidatorService {
 
-    override def validateUrl(
+    override def isUrlValid(
         webhook: WebHook
     ): zio.ZIO[Unit, Throwable, Boolean] =
       for {
         existingWebhook <- repo.lookupByUrl(webhook.url)
-        result          <- ZIO.succeed(existingWebhook.nonEmpty)
+        result          <- ZIO.succeed(existingWebhook.isEmpty)
       } yield result
 
-    override def validateParams(
+    override def isParamsValid(
         webhook: WebHook
     ): zio.ZIO[Unit, Throwable, Boolean] =
       for {
-        existingFormat <- ZIO.succeed(Format.values.count(_.name.eq(webhook.format)))
-        existingVolume <- ZIO.succeed(Volume.values.count(_.name.eq(webhook.volume)))
+        existingFormat <- ZIO.succeed(Format.values.count(_.name.equals(webhook.format)))
+        existingVolume <- ZIO.succeed(Volume.values.count(_.name.equals(webhook.volume)))
         result          <- ZIO.succeed(existingFormat > 0 && existingVolume > 0)
       } yield result
   }

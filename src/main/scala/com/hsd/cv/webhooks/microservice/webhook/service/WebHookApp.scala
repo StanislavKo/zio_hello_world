@@ -1,12 +1,11 @@
-package com.hsd.cv.webhooks.microservice.webhook
+package com.hsd.cv.webhooks.microservice.webhook.service
 
-import com.hsd.cv.webhooks.microservice.webhook.model.{WebHook, WebHookId}
+import com.hsd.cv.webhooks.microservice.webhook.model.WebHook
 import com.hsd.cv.webhooks.microservice.webhook.repository.WebHookRepo
 import com.hsd.cv.webhooks.microservice.webhook.validator.WebHookValidatorService
-import zhttp.http.*
-import zio.*
-import zio.ZIO.{none, suspendSucceed}
-import zio.json.*
+import zhttp.http._
+import zio.json.{DecoderOps, EncoderOps}
+import zio.{ZIO, ZLayer}
 
 object WebHookApp {
   def apply(): Http[WebHookRepo with WebHookValidatorService with Unit, Throwable, Request, Response] =
@@ -15,25 +14,26 @@ object WebHookApp {
       case req@(Method.POST -> !! / "webhooks") =>
         for {
           u <- req.bodyAsString.map(_.fromJson[WebHook])
-          r <- u match
+          r <- u match {
             case Left(e) =>
               ZIO
                 .debug(s"Failed to parse the input: $e")
                 .as(Response.text(e).setStatus(Status.BadRequest))
             case Right(u) => {
               for {
-                validationUrl <- ZIO.service[WebHookValidatorService].flatMap(!_.validateUrl(u))
-                validationParams <- ZIO.service[WebHookValidatorService].flatMap(!_.validateParams(u))
-                response2 <- suspendSucceed {
-                  if (validationUrl && validationParams)
+                isUrlValid <- ZIO.service[WebHookValidatorService].flatMap(_.isUrlValid(u))
+                isParamsValid <- ZIO.service[WebHookValidatorService].flatMap(_.isParamsValid(u))
+                response2 <- ZIO.suspendSucceed {
+                  if (isUrlValid && isParamsValid)
                     WebHookRepo.register(u).map(id => Response.text(id.toString))
                   else
                     ZIO
-                      .debug(s"Validation is failed: validationUrl=$validationUrl, validationParams=$validationParams")
+                      .debug(s"Validation is failed: isUrlValid=$isUrlValid, isParamsValid=$isParamsValid")
                       .as(Response.text("Validation is failed"))
                 }
               } yield response2
             }
+          }
         } yield r
 
       // GET /webhooks/:id

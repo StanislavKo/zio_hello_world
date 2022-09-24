@@ -1,8 +1,8 @@
 package com.hsd.cv.webhooks.microservice.confirmation
 
-import zhttp.http.*
+import zhttp.http._
 
-object ConfirmationApp:
+object ConfirmationApp {
   def apply(): Http[Any, Nothing, Request, Response] =
     Http.collect[Request] {
       // GET /confirmation?k=:k&v=:v
@@ -11,3 +11,4 @@ object ConfirmationApp:
         Response.text("OK")
       }
     }
+}

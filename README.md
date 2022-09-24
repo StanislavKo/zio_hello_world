@@ -1,6 +1,6 @@
-Scala 3.2
+Scala 2.13.8
 
-sbt 1.7.1
+sbt 1.6.2
 
 There are no tests.
 
@@ -15,3 +15,4 @@ sbt run
 Change log:
 - HTTP server. Returned webhooks contain id;
 - HTTP server. Validation of created webhooks is added;
+- Downgrade to scala 2.13.8, sbt 1.6.2

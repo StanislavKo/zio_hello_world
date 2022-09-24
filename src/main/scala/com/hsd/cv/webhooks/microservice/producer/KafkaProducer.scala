@@ -1,8 +1,8 @@
 package com.hsd.cv.webhooks.microservice.producer
 
-import zio.*
-import zio.kafka.*
-import zio.kafka.producer.*
+import zio._
+import zio.kafka._
+import zio.kafka.producer._
 
 object KafkaProducer {
 

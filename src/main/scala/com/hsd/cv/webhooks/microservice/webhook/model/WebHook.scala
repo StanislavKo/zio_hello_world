@@ -1,14 +1,12 @@
 package com.hsd.cv.webhooks.microservice.webhook.model
 
-import com.hsd.cv.webhooks.microservice.webhook.model.WebHook
-import zio.json.*
-
-import java.util.UUID
+import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
 case class WebHook(url: String, topic: String, format: String, volume: String)
 
-object WebHook:
-  given JsonEncoder[WebHook] =
+object WebHook {
+  implicit val encoder: JsonEncoder[WebHook] =
     DeriveJsonEncoder.gen[WebHook]
-  given JsonDecoder[WebHook] =
+  implicit val decoder: JsonDecoder[WebHook] =
     DeriveJsonDecoder.gen[WebHook]
+}
