@@ -1,0 +1,1 @@
+g:\Programs\sonarqube\sonar-scanner-cli-4.7.0.2747-windows\sonar-scanner-4.7.0.2747-windows\bin\sonar-scanner.bat -D"sonar.projectKey=webhook" -D"sonar.sources=." -D"sonar.host.url=http://localhost:9000" -D"sonar.login=sqp_7070d7891ebd0e879df37a35c1270d55152bdd93"
