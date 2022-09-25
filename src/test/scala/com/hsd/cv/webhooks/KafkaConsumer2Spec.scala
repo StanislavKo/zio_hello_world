@@ -6,11 +6,11 @@ import com.hsd.cv.webhooks.microservice.webhook.repository.{InmemoryWebHookRepo,
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.{KafkaProducer, ProducerConfig, ProducerRecord}
 import org.scalatest.flatspec.AnyFlatSpec
-import zio.{Unsafe, ZIO, ZIOAppDefault, ZLayer}
+import zio.{Cause, Exit, Unsafe, ZIO, ZLayer}
 
 import java.util.Properties
 
-class KafkaConsumerSpec extends AnyFlatSpec {
+class KafkaConsumer2Spec extends AnyFlatSpec {
 
   "kafka consumer" should "receive messages" in {
     new Thread(() => {
@@ -26,7 +26,7 @@ class KafkaConsumerSpec extends AnyFlatSpec {
       props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest") // earliest, latest
 
       val producer = new KafkaProducer[String, String](props)
-      val topic = "topic2"
+      val topic = "topic3"
       try {
         for (i <- 0 to 20) {
           val record = new ProducerRecord[String, String](topic, "key-" + i, "value-" + i)
@@ -44,7 +44,7 @@ class KafkaConsumerSpec extends AnyFlatSpec {
 
     val kafkaServerConfigLayer: ZLayer[Any, Unit, KafkaServerConfig] =
       ZLayer {
-        ZIO.succeed(KafkaServerConfig("localhost:29092", "groudId" + System.currentTimeMillis(), "topic2"))
+        ZIO.succeed(KafkaServerConfig("localhost:29092", "groudId" + System.currentTimeMillis(), "topic3"))
       }
 
     val repoLayer: ZLayer[Any, Nothing, InmemoryWebHookRepo] = InmemoryWebHookRepo.layer
@@ -53,13 +53,17 @@ class KafkaConsumerSpec extends AnyFlatSpec {
 
     val unitLayer: ZLayer[KafkaServerConfig, Throwable, Unit] = ConsumerService.layerUnit
 
-    new Thread(() => {
-      ZIOAppDefault
-        .fromZIO(
+    assert {
+
+      val result = Unsafe.unsafe(implicit unsafe =>
+        zio.Runtime.default.unsafe.run(
           ZIO
             .service[ConsumerService]
-            .flatMap {
-              _.consume()
+            .withParallelism(5)
+            .flatMap { cs =>
+              cs.consume().fork *>
+                ZIO.succeed(Thread.sleep(10_000)) *>
+                ZIO.succeed(cs.getHandledMessages())
             }
             .provide(
               repoLayer,
@@ -68,60 +72,14 @@ class KafkaConsumerSpec extends AnyFlatSpec {
               unitLayer
             )
         )
-        .main(Array.empty)
-    }).start()
-
-    Thread.sleep(10_000)
-
-    assert {
-
-//      ZIO.succeedUnsafe(repoLayer.)
-//      zio.Runtime.default.unsafe.run(repoLayer)
-//      zio.Runtime.default.unsafe.run(
-//        ZIO.service[ConsumerService].map(cs => cs.getHandledMessages())
-//          .provide(repoLayer)
-//      )
-//      val result = Unsafe.unsafe(implicit unsafe =>
-//        zio.Runtime.default.unsafe.run(
-//          ZIO.service[ConsumerService].map(cs => cs.getHandledMessages())
-//            .provide(repoLayer,
-//              kafkaServerConfigLayer,
-//              ConsumerService.layer,
-//              ConsumerService.layerUnit)
-//        )
-//      )
-//      val result = Unsafe.unsafe(implicit unsafe =>
-//        zio.Runtime.default.unsafe.run(
-//          ZIO.service[ConsumerService].map(cs => cs.getHandledMessages())
-//            .asInstanceOf[ZIO[Any, Nothing, Int]]
-//        )
-//      )
-//      println(s"######### result=$result")
-//
-//      ZIO.service[ConsumerService].map(cs => cs.getHandledMessages())
-//        .asInstanceOf[ZIO[Any, Nothing, Int]].map(int => println(s"######### int=$int"))
-
-//      new Thread(() => {
-//        ZIOAppDefault
-//          .fromZIO {
-//            val result = Unsafe.unsafe(implicit unsafe =>
-//              zio.Runtime.default.unsafe.run(
-//                ZIO.service[ConsumerService].map(cs => cs.getHandledMessages())
-//                  .provide(
-//                    repoLayer,
-//                    kafkaServerConfigLayer,
-//                    consumerLayer,
-//                    unitLayer
-//                  )
-//              )
-//            )
-//            println(s"######### result=$result")
-//            ZIO.some("A")
-//          }
-//          .main(Array.empty)
-//      }).start()
-
-      true
+      )
+      println(s"######### result=$result")
+      result match {
+        case Exit.Success(value) =>
+          value > 0
+        case Exit.Failure(cause) =>
+          false
+      }
     }
   }
 }
