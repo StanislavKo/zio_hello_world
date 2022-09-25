@@ -3,5 +3,7 @@ CREATE TABLE IF NOT EXISTS webhook(
     url VARCHAR(1024),
     topic VARCHAR(256),
     format VARCHAR(32),
-    volume VARCHAR(32)
+    volume VARCHAR(32),
+    description VARCHAR(255),
+    desccode VARCHAR(255)
 );

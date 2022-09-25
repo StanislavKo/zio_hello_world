@@ -7,22 +7,26 @@ import zio._
 import scala.collection.mutable
 
 case class InmemoryWebHookRepo(map: Ref[mutable.Map[Long, WebHookId]]) extends WebHookRepo {
-  def register(webhook: WebHook): UIO[Long] =
+  override def register(webhook: WebHook): UIO[Long] =
     for {
       id <- Random.nextLong
-      _ <- map.updateAndGet(_ addOne(id, WebHookId(id, webhook.url, webhook.topic, webhook.format, webhook.volume)))
+      _ <- map.updateAndGet(_ addOne(id, WebHookId(id, webhook.url, webhook.topic, webhook.format, webhook.volume, webhook.description, webhook.desccode)))
     } yield id
 
-  def lookup(id: Long): UIO[Option[WebHookId]] =
+  override def registerSlow(webhook: WebHook): Task[Long] = register(webhook)
+
+  override def lookup(id: Long): UIO[Option[WebHookId]] =
     map.get.map(_.get(id))
 
-  def lookupByUrl(url: String): UIO[Option[WebHookId]] =
+  override def lookupByUrl(url: String): UIO[Option[WebHookId]] =
     map.get.map(coll => Option[WebHookId](coll.values.toList.filter(_.url.eq(url)).last))
 
-  def webhooks: UIO[List[WebHookId]] =
+  override def webhooks: UIO[List[WebHookId]] =
     map.get.map(_.values.toList)
 
-  def delete(id: Long): UIO[Unit] =
+  override def webhooksUncommitted: UIO[List[WebHookId]] = webhooks
+
+  override def delete(id: Long): UIO[Unit] =
     map.get.map(_.remove(id))
 }
 

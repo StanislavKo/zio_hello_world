@@ -26,4 +26,4 @@ Change log:
 - Downgrade to scala 2.13.8, sbt 1.6.2
 - Unit tests (functional + integration + ZIO/integration)
 - Sonarqube is plugged in - it doesn't analyze scala codebase
-
+- branch[BEE-6/dirty-read], Dirty read from H2 database (postgresql doesn't implement read-uncommitted)

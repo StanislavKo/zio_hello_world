@@ -36,6 +36,32 @@ object WebHookApp {
           }
         } yield r
 
+      // POST /webhooks
+      case req@(Method.POST -> !! / "webhooksSlow") =>
+        for {
+          u <- req.bodyAsString.map(_.fromJson[WebHook])
+          r <- u match {
+            case Left(e) =>
+              ZIO
+                .debug(s"Failed to parse the input: $e")
+                .as(Response.text(e).setStatus(Status.BadRequest))
+            case Right(u) => {
+              for {
+                isUrlValid <- ZIO.service[WebHookValidatorService].flatMap(_.isUrlValid(u))
+                isParamsValid <- ZIO.service[WebHookValidatorService].flatMap(_.isParamsValid(u))
+                response2 <- ZIO.suspendSucceed {
+                  if (isUrlValid && isParamsValid)
+                    WebHookRepo.registerSlow(u).map(id => Response.text(id.toString))
+                  else
+                    ZIO
+                      .debug(s"Validation is failed: isUrlValid=$isUrlValid, isParamsValid=$isParamsValid")
+                      .as(Response.text("Validation is failed"))
+                }
+              } yield response2
+            }
+          }
+        } yield r
+
       // GET /webhooks/:id
       case Method.GET -> !! / "webhooks" / id =>
         WebHookRepo.lookup(id.toLong)
@@ -49,6 +75,10 @@ object WebHookApp {
       // GET /webhooks
       case Method.GET -> !! / "webhooks" =>
         WebHookRepo.webhooks.map(response => Response.json(response.toJson))
+
+      // GET /webhooks
+      case Method.GET -> !! / "webhooksSlow" =>
+        WebHookRepo.webhooksUncommitted.map(response => Response.json(response.toJson))
 
       // DELETE /webhooks/:id
       case Method.DELETE -> !! / "webhooks" / id => {

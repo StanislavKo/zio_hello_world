@@ -26,8 +26,8 @@ object MainApp {
           .provide(
             WebHookValidatorService.layer,
               // InmemoryWebHookRepo.layer,
-            // PersistentH2WebHookRepo.layer,
-            PersistentPostgresqlWebHookRepo.layer,
+             PersistentH2WebHookRepo.layer,
+//            PersistentPostgresqlWebHookRepo.layer,
             HttpServerConfig.layer,
             WebHookApp.layerUnit
           )
@@ -52,7 +52,8 @@ object MainApp {
           .service[ConsumerService]
           .flatMap { _.consume() }
           .provide(
-            PersistentPostgresqlWebHookRepo.layer,
+            PersistentH2WebHookRepo.layer,
+//            PersistentPostgresqlWebHookRepo.layer,
             KafkaServerConfig.layer,
             ConsumerService.layer,
             ConsumerService.layerUnit

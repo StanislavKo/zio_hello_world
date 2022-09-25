@@ -2,7 +2,7 @@ package com.hsd.cv.webhooks.microservice.webhook.model
 
 import zio.json.{DeriveJsonDecoder, DeriveJsonEncoder, JsonDecoder, JsonEncoder}
 
-case class WebHookId(id: Long, url: String, topic: String, format: String, volume: String)
+case class WebHookId(id: Long, url: String, topic: String, format: String, volume: String, description: String, desccode: String)
 
 object WebHookId {
   implicit val encoder: JsonEncoder[WebHookId] =
