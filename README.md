@@ -7,7 +7,15 @@ There are no tests.
 ```
 docker-compose up
 
+sbt test
+
 sbt run
+
+sbt clean
+
+sbt assembly
+
+sbt docker
 ```
 
 [![Scaling up](https://img.youtube.com/vi/sx0rD1__mOQ/0.jpg)](https://www.youtube.com/watch?v=sx0rD1__mOQ)
@@ -16,6 +24,6 @@ Change log:
 - HTTP server. Returned webhooks contain id;
 - HTTP server. Validation of created webhooks is added;
 - Downgrade to scala 2.13.8, sbt 1.6.2
-- Unit tests (basic) - can't test ZIO 
-- Sonarqube is plugged in - it doesn't analyze codebase
+- Unit tests (functional + integration + ZIO/integration)
+- Sonarqube is plugged in - it doesn't analyze scala codebase
 
