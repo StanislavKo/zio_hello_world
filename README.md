@@ -2,8 +2,6 @@ Scala 2.13.8
 
 sbt 1.6.2
 
-There are no tests.
-
 ```
 docker-compose up
 
