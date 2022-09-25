@@ -3,10 +3,6 @@ package com.hsd.cv.webhooks
 import com.hsd.cv.webhooks.utils.NetworkUtils
 import org.scalatest.flatspec.AnyFlatSpec
 
-import java.io.IOException
-import java.net.{HttpURLConnection, URL}
-import scala.io.Source
-
 class HttpApiSpec extends AnyFlatSpec {
 
   "http api" should "return webhooks" in {
