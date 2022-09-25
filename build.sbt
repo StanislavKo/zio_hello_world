@@ -1,6 +1,6 @@
 scalaVersion := "2.13.8"
 organization := "com.hsd"
-name         := "CvWebHook"
+name         := "cvwebhook"
 
 libraryDependencies ++= Seq(
   "dev.zio"       %% "zio"            % "2.0.1",
